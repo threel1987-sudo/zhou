@@ -1291,7 +1291,7 @@ SUPABASE_SERVICE_KEY=xxx python scripts/sync_to_supabase.py --apply
 ```
 
 C 端写入 Supabase 时，记录必须带稳定唯一 `id`，并把 `source` 写成 `chatgpt`。Ombre 本地已有的记录会优先写回原文件路径，新记录会写成 `类型/主题/标题_id.md`。
-同步判断只比较内容字段和 `updated_at`：`content/name/tags/domain/pinned/resolved/digested/importance/source` 参与同步；`last_active/activation_count` 是 VPS 本地运行时字段，普通召回刷新它们时不会推回 Supabase；`synced_at` 只表示同步脚本成功处理的时间。`confidence/period/date` 先保存在本地 bucket 元数据里，Supabase 表结构扩展后再加入同步字段。
+同步判断只比较内容字段和 `updated_at`：`content/name/tags/domain/pinned/anchor/resolved/digested/importance/source` 参与同步；`last_active/activation_count` 是 VPS 本地运行时字段，普通召回刷新它们时不会推回 Supabase；`synced_at` 只表示同步脚本成功处理的时间。`confidence/period/date` 先保存在本地 bucket 元数据里，Supabase 表结构扩展后再加入同步字段。
 
 删除用墓碑记录。MCP 删除本地 bucket 后，会在 `.tombstones/<bucket_id>.json` 留一条记录；同步脚本会把它推到 Supabase，形态是 `source=deleted`。下一次如果 Supabase 或本地又出现同 id 的旧文件，脚本会按墓碑删除本地旧文件，避免旧记忆重新出现。
 
