@@ -11,7 +11,7 @@ from openai import AsyncOpenAI
 
 from identity import generic_identity_names, identity_names, render_identity_template
 from memory_edges import RELATION_TYPES, MemoryEdgeStore
-from utils import strip_wikilinks
+from utils import bucket_text_for_embedding, strip_wikilinks
 
 logger = logging.getLogger("ombre_brain.reflection")
 
@@ -270,7 +270,12 @@ class ReflectionEngine:
             await bucket_mgr.update(bucket_id, **updates)
             if "content" in updates and embedding_engine and getattr(embedding_engine, "enabled", False):
                 try:
-                    await embedding_engine.generate_and_store(bucket_id, updates["content"])
+                    updated_bucket = await bucket_mgr.get(bucket_id)
+                    if updated_bucket:
+                        await embedding_engine.generate_and_store(
+                            bucket_id,
+                            bucket_text_for_embedding(updated_bucket),
+                        )
                 except Exception as exc:
                     logger.warning("Memory affect anchor embedding refresh failed for %s: %s", bucket_id, exc)
 
@@ -422,7 +427,12 @@ class ReflectionEngine:
 
         if embedding_engine and getattr(embedding_engine, "enabled", False):
             try:
-                await embedding_engine.generate_and_store(bucket_id, content)
+                bucket = await bucket_mgr.get(bucket_id)
+                if bucket:
+                    await embedding_engine.generate_and_store(
+                        bucket_id,
+                        bucket_text_for_embedding(bucket),
+                    )
             except Exception as exc:
                 logger.warning("Reflection embedding failed for %s: %s", bucket_id, exc)
 
@@ -752,7 +762,12 @@ class ReflectionEngine:
         )
         if embedding_engine and getattr(embedding_engine, "enabled", False):
             try:
-                await embedding_engine.generate_and_store(new_id, content)
+                bucket = await bucket_mgr.get(new_id)
+                if bucket:
+                    await embedding_engine.generate_and_store(
+                        new_id,
+                        bucket_text_for_embedding(bucket),
+                    )
             except Exception as exc:
                 logger.warning("Diary memory embedding failed for %s: %s", new_id, exc)
         return {"status": "created", "id": new_id, "reason": candidate.get("reason", "")}
