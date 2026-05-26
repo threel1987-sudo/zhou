@@ -919,6 +919,9 @@ source=deleted
 # 一键菜单：首次部署、更新、排障、embedding 维护
 bash scripts/one_click.sh
 
+# 同上，短入口
+./ob
+
 # 一键排障：检查 key、服务、端口、健康接口和最近错误日志
 COMPOSE_FILE=compose.hk.yml bash scripts/doctor.sh
 
@@ -957,6 +960,7 @@ docker compose -f compose.hk.yml exec -T ombre-brain python scripts/cleanup_migr
 脚本用途：
 
 - `scripts/one_click.sh`：新手入口。菜单包含首次部署、更新版本、错误排查和 embedding 维护。首次部署、更新和排查都会先选择 `VPS / Windows / 手机`。VPS 和 Windows 走 Docker 并生成本机专用的 `compose.local.yml`；手机按 Termux/Python 直跑并生成 `start_mobile.sh`。模型配置和 key 会交互式填写，key 写入 `.env`，非密钥配置写入 `config.yaml`，最后生成 `connection_guide.txt` 告诉客户端 URL 怎么填。
+- `./ob`：短入口，等同于 `bash scripts/one_click.sh`。也可以在菜单里选“安装短命令 ob”，写入当前用户的 shell 配置；之后任意位置输入 `ob` 就能打开菜单。
 - `scripts/doctor.sh`：适合“更新后不能用、端口不通、怀疑 key 没配好”。它只读检查，不会重启服务、不改配置、不打印 key。会提示 `.env/config.yaml`、Docker Compose 状态、健康接口、容器内环境变量和最近错误日志。
 - `scripts/update_deploy.sh`：适合“我只想更新到最新版”。它会 `git pull --ff-only`，如果 compose 里是 `build:` 就重建镜像，否则先 pull 镜像，再启动容器，最后做健康检查。
 - `scripts/embedding_backfill.sh`：只补缺失的 embedding，适合升级后发现部分记忆没有语义召回。

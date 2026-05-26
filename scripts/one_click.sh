@@ -792,6 +792,36 @@ doctor_mobile_runtime() {
   printf '  Dashboard: http://127.0.0.1:8000/dashboard\n'
 }
 
+install_shortcut() {
+  local repo_root shell_rc alias_line marker
+  repo_root="$(pwd)"
+  marker="# Ombre-Brain one-click shortcut"
+  alias_line="alias ob='cd $(printf "%q" "${repo_root}") && bash scripts/one_click.sh'"
+
+  if [[ -n "${BASH_VERSION:-}" ]]; then
+    shell_rc="${HOME}/.bashrc"
+  elif [[ -n "${ZSH_VERSION:-}" ]]; then
+    shell_rc="${HOME}/.zshrc"
+  else
+    shell_rc="${HOME}/.profile"
+  fi
+
+  touch "${shell_rc}" || return 1
+  if grep -Fq "${marker}" "${shell_rc}"; then
+    printf '已存在 ob 快捷命令配置：%s\n' "${shell_rc}"
+  else
+    {
+      printf '\n%s\n' "${marker}"
+      printf '%s\n' "${alias_line}"
+    } >> "${shell_rc}"
+    printf '已写入 ob 快捷命令：%s\n' "${shell_rc}"
+  fi
+
+  printf '当前窗口立即生效可执行：\n'
+  printf '  source %s\n' "${shell_rc}"
+  printf '之后直接输入：ob\n'
+}
+
 first_deploy() {
   choose_deploy_target
   line
@@ -963,8 +993,9 @@ main_menu() {
     printf '2. 更新版本\n'
     printf '3. 错误排查\n'
     printf '4. 常用维护\n'
+    printf '5. 安装短命令 ob\n'
     printf '0. 退出\n'
-    if ! read -r -p '输入（0-4）：' choice; then
+    if ! read -r -p '输入（0-5）：' choice; then
       printf '\n'
       exit 0
     fi
@@ -973,8 +1004,9 @@ main_menu() {
       2) update_version; pause ;;
       3) run_doctor; pause ;;
       4) maintenance_menu ;;
+      5) install_shortcut; pause ;;
       0) exit 0 ;;
-      *) printf '请输入 0-4。\n' ;;
+      *) printf '请输入 0-5。\n' ;;
     esac
   done
 }
