@@ -1566,6 +1566,7 @@ vector_cleanup_orphans() {
 vector_import_dedupe_guide() {
   vector_prepare_target "导入重复桶清理指引" || return 1
   local service="${OMBRE_SERVICE:-ombre-brain}"
+  local cleanup_choice
   line
   printf '导入重复桶清理指引\n'
   line
@@ -1574,38 +1575,79 @@ vector_import_dedupe_guide() {
   printf '   Dashboard 删除会走 /api/import/review，并同步清掉对应 embedding。\n'
   printf '3. 大量重复：先备份，再只删确认属于本次导入的 bucket 文件。\n'
   printf '   建议按导入时间、标题和正文人工确认；不要批量删除 permanent/anchor/pinned 桶。\n'
-  printf '4. 手动删 bucket 文件后，清理 orphan embeddings。\n\n'
+  printf '4. 本菜单会先扫描重复桶；可选人工逐组确认，或一键删除 exact duplicate 中安全的一份。\n'
+  printf '   扫描结果会打印重复桶前两句话和相似度；80%% 疑似重复只在人工确认模式里删除。\n\n'
 
   if [[ "${DEPLOY_TARGET}" == "python" ]]; then
     printf '本地 Python 部署参考命令：\n'
     printf '  mkdir -p state/backups\n'
     printf '  tar -czf "state/backups/before-import-dedupe-$(date +%%Y%%m%%d_%%H%%M%%S).tar.gz" buckets state\n'
-    printf '  # 然后只删除确认重复的 buckets/dynamic/.../*.md 文件\n'
-    printf '  python scripts/cleanup_orphan_embeddings.py --delete\n'
-    printf '  # 已确认无误、需要非交互执行时：\n'
+    printf '  python scripts/cleanup_duplicate_buckets.py\n'
+    printf '  python scripts/cleanup_duplicate_buckets.py --interactive --near-threshold 80\n'
+    printf '  python scripts/cleanup_duplicate_buckets.py --delete --yes\n'
+    printf '  # 如果你已经手动删除过 bucket 文件，再清 orphan embeddings：\n'
     printf '  python scripts/cleanup_orphan_embeddings.py --delete --yes\n'
   else
     printf 'Docker/Compose 部署参考命令：\n'
     printf '  docker compose -f %s exec -T %s sh -lc '"'"'mkdir -p /state/backups && tar -czf "/state/backups/before-import-dedupe-$(date +%%Y%%m%%d_%%H%%M%%S).tar.gz" /data /state'"'"'\n' "${COMPOSE_FILE}" "${service}"
-    printf '  # 然后只删除确认重复的 /data/dynamic/.../*.md 文件\n'
-    printf '  docker compose -f %s exec -T %s python scripts/cleanup_orphan_embeddings.py --delete\n' "${COMPOSE_FILE}" "${service}"
-    printf '  # 已确认无误、需要非交互执行时：\n'
+    printf '  docker compose -f %s exec -T %s python scripts/cleanup_duplicate_buckets.py\n' "${COMPOSE_FILE}" "${service}"
+    printf '  docker compose -f %s exec -T %s python scripts/cleanup_duplicate_buckets.py --interactive --near-threshold 80\n' "${COMPOSE_FILE}" "${service}"
+    printf '  docker compose -f %s exec -T %s python scripts/cleanup_duplicate_buckets.py --delete --yes\n' "${COMPOSE_FILE}" "${service}"
+    printf '  # 如果你已经手动删除过 bucket 文件，再清 orphan embeddings：\n'
     printf '  docker compose -f %s exec -T %s python scripts/cleanup_orphan_embeddings.py --delete --yes\n' "${COMPOSE_FILE}" "${service}"
   fi
 
-  printf '\n如果已经误删 bucket 但还没清 embedding，先跑上面的 orphan cleanup；如果误删重要桶，先从备份包恢复，不要继续重建向量库。\n'
   printf '\n'
-  if prompt_yes_no '确认已经备份，并且已经手动删除了重复 bucket 文件；现在清理 orphan embeddings 吗' 'n'; then
-    if [[ "${DEPLOY_TARGET}" == "python" ]]; then
-      local python_cmd
-      python_cmd="$(detect_python_cmd)" || return 1
-      "${python_cmd}" scripts/cleanup_orphan_embeddings.py --delete --yes
-    else
-      COMPOSE_FILE="${COMPOSE_FILE}" OMBRE_SERVICE="${service}" "${SCRIPT_DIR}/embedding_cleanup_orphans.sh" --yes
-    fi
+  printf '开始扫描重复桶...\n'
+  if [[ "${DEPLOY_TARGET}" == "python" ]]; then
+    local python_cmd
+    python_cmd="$(detect_python_cmd)" || return 1
+    "${python_cmd}" scripts/cleanup_duplicate_buckets.py --limit 30 || return 1
   else
-    printf '已跳过删除。需要时可稍后从“检查并删除孤儿向量”执行。\n'
+    run_target_shell "PYTHONIOENCODING=utf-8 python scripts/cleanup_duplicate_buckets.py --limit 30" || return 1
   fi
+
+  printf '\n选择清理方式：\n'
+  printf '1. 人工逐组确认（包含相似度 >=80%% 的疑似重复；y 删建议项，1/2 删左/右）\n'
+  printf '2. 一键删除确定重复（只删 exact duplicate 中安全的一份）\n'
+  printf '0. 不删除\n'
+  if ! read -r -p '输入（0-2）：' cleanup_choice; then
+    printf '\n'
+    return 0
+  fi
+
+  case "${cleanup_choice}" in
+    1)
+      if ! prompt_yes_no '确认已经备份；进入人工确认模式吗' 'n'; then
+        printf '已跳过删除。\n'
+        return 0
+      fi
+      if [[ "${DEPLOY_TARGET}" == "python" ]]; then
+        "${python_cmd}" scripts/cleanup_duplicate_buckets.py --interactive --near-threshold 80 --limit 30
+      else
+        run_target_shell "PYTHONIOENCODING=utf-8 python scripts/cleanup_duplicate_buckets.py --interactive --near-threshold 80 --limit 30"
+      fi
+      ;;
+    2)
+      if ! prompt_yes_no '确认已经备份；一键删除 exact duplicate 中安全的一份吗' 'n'; then
+        printf '已跳过删除。\n'
+        return 0
+      fi
+      if [[ "${DEPLOY_TARGET}" == "python" ]]; then
+        "${python_cmd}" scripts/cleanup_duplicate_buckets.py --delete --yes --limit 30
+      else
+        run_target_shell "PYTHONIOENCODING=utf-8 python scripts/cleanup_duplicate_buckets.py --delete --yes --limit 30"
+      fi
+      ;;
+    0|'')
+      printf '已跳过删除。\n'
+      ;;
+    *)
+      printf '请输入 0-2。\n'
+      ;;
+  esac
+
+  printf '\n如果已经误删 bucket，先从备份包恢复，不要继续重建向量库。\n'
 }
 
 vector_menu() {
