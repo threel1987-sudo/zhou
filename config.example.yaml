@@ -20,9 +20,9 @@ identity:
     - "亲爱的"
 
 dehydration:
-  model: "deepseek-chat"
-  base_url: "https://api.deepseek.com/v1"
-  api_key: ""
+  model: "deepseek-ai/DeepSeek-V4-Pro"
+  base_url: "https://api.siliconflow.cn/v1"
+  api_key: "sk-zysgrymkzlusmawyeeacjqnofqycrxaljxjmjpxfdqlcpbky"
   thinking_mode: ""
   max_tokens: 1024
   temperature: 0.1
@@ -133,7 +133,7 @@ reflection:
   enrich_backfill_enabled: true
   enrich_backfill_limit: 10
   base_url: "https://api.deepseek.com/v1"
-  model: "deepseek-chat"
+  model: "deepseek-v4-pro"
   api_key: "sk-e6eb76e2a80c4997b21c2c5593ea7e38"
   thinking_mode: ""
   temperature: 0.1
