@@ -90,7 +90,7 @@ persona:
   profile_id: "haven_ake"
   mode: "llm"
   base_url: "https://api.deepseek.com/v1"
-  model: "deepseek-chat"
+  model: "deepseek-v4-pro"
   api_key: "sk-e6eb76e2a80c4997b21c2c5593ea7e38"
   thinking_mode: ""
   temperature: 0.1
