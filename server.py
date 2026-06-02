@@ -1165,7 +1165,7 @@ async def _backfill_memory_enrichment(
 
 
 @mcp.tool()
-async def enrich_backfill(_: bool = True, limit: int = 10) -> dict:
+async def enrich_backfill(run: bool = True, limit: int = 10) -> dict:
     """后台补跑缺失的 tags/confidence/memory_edges；主要用于 enrich_on_write 曾经超时或关闭后的修复。"""
     return await _backfill_memory_enrichment(limit=limit)
 
