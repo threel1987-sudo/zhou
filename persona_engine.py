@@ -462,10 +462,12 @@ class PersonaStateEngine:
 
             parsed = self._parse_json(raw or "")
             if parsed is None:
+                raw_preview = (raw or "")[:500].replace("\n", "\\n")
                 logger.warning(
-                    "Persona evaluator returned malformed JSON finish_reason=%s raw_len=%s",
+                    "Persona evaluator returned malformed JSON finish_reason=%s raw_len=%s raw_preview=%r",
                     finish_reason,
                     len(raw or ""),
+                    raw_preview,
                 )
                 return None, raw or "", f"persona LLM returned malformed JSON finish_reason={finish_reason}"
             return self._normalize_evaluation(parsed), raw or "", None
@@ -1080,7 +1082,7 @@ class PersonaStateEngine:
             "max_tokens": self.max_tokens,
         }
 
-        if bool(self.persona_cfg.get("json_mode", True)):
+        if bool(self.persona_cfg.get("json_mode", False)):
             options["response_format"] = {"type": "json_object"}
 
         if self.thinking_mode:
