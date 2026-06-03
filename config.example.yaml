@@ -10,11 +10,11 @@ write_path:
   semantic_search_timeout_seconds: 3
 
 identity:
-  ai_name: "阿克"
+  ai_name: "泊舟"
   user_name: "澪"
-  user_display_name: "阿澪"
+  user_display_name: "澪"
   user_aliases:
-    - "阿澪"
+    - "澪"
     - "老婆"
     - "宝宝"
     - "亲爱的"
@@ -87,7 +87,7 @@ gateway:
 
 persona:
   enabled: true
-  profile_id: "haven_ake"
+  profile_id: "泊舟"
   mode: "llm"
   base_url: "https://api.deepseek.com/v1"
   model: "deepseek-v4-pro"
