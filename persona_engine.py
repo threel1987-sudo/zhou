@@ -248,7 +248,17 @@ class PersonaStateEngine:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
     def _post_reply_evaluation_prompt(self) -> str:
-        return render_identity_template(POST_REPLY_EVALUATION_PROMPT_TEMPLATE, self.identity)
+        prompt = render_identity_template(POST_REPLY_EVALUATION_PROMPT_TEMPLATE, self.identity)
+        compact_rules = """
+额外硬性输出规则：
+- 只返回一个 JSON object，不要 Markdown，不要解释。
+- 使用紧凑单行 JSON，不要换行，不要缩进。
+- perceived_intent 和 residue 必须很短，各不超过 40 个中文字符。
+- 不要复述用户原话，不要写长句。
+- 所有 delta 只使用 -0.03 到 0.03 之间的小数；没有信号就填 0.0、false 或空字符串。
+- 必须一次性闭合所有花括号。
+"""
+        return f"{prompt}\n\n{compact_rules}"
 
     async def build_pre_reply_guidance(self, session_id: str, latest_user_message: str = "") -> dict:
         now = self._now()
