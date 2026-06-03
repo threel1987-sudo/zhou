@@ -466,19 +466,70 @@ class PersonaStateEngine:
             return None, "", str(exc)
 
     def _parse_json(self, raw: str) -> dict | None:
-        text = raw.strip()
+        text = str(raw or "").strip()
         if not text:
             return None
-        text = re.sub(r"^```(?:json)?\s*", "", text)
+
+        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
         text = re.sub(r"\s*```$", "", text)
-        match = re.search(r"\{.*\}", text, flags=re.DOTALL)
-        if match:
-            text = match.group(0)
-        try:
-            parsed = json.loads(text)
-            return parsed if isinstance(parsed, dict) else None
-        except json.JSONDecodeError:
+
+        candidates = []
+        extracted = self._extract_json_object(text)
+        if extracted:
+            candidates.append(extracted)
+
+        candidates.append(text)
+
+        for candidate in candidates:
+            cleaned = candidate.strip()
+            cleaned = cleaned.replace("“", '"').replace("”", '"')
+            cleaned = cleaned.replace("‘", "'").replace("’", "'")
+            cleaned = re.sub(r",\s*([}\]])", r"\1", cleaned)
+
+            try:
+                parsed = json.loads(cleaned)
+                return parsed if isinstance(parsed, dict) else None
+            except json.JSONDecodeError:
+                continue
+
+        return None
+
+    def _extract_json_object(self, text: str) -> str | None:
+        start = text.find("{")
+        if start < 0:
             return None
+
+        depth = 0
+        in_string = False
+        escape = False
+
+        for idx in range(start, len(text)):
+            char = text[idx]
+
+            if escape:
+                escape = False
+                continue
+
+            if char == "\\":
+                escape = True
+                continue
+
+            if char == '"':
+                in_string = not in_string
+                continue
+
+            if in_string:
+                continue
+
+            if char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[start : idx + 1]
+
+        return None
+
 
     def _normalize_evaluation(self, data: dict) -> dict:
         raw_relationship_delta = data.get("relationship_delta", {})
