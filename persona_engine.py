@@ -530,7 +530,6 @@ class PersonaStateEngine:
 
         return None
 
-
     def _normalize_evaluation(self, data: dict) -> dict:
         raw_relationship_delta = data.get("relationship_delta", {})
         raw_personality_delta = data.get("personality_delta", {})
