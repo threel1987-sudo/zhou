@@ -10,14 +10,14 @@ write_path:
   semantic_search_timeout_seconds: 3
 
 identity:
-  ai_name: "泊舟"
+  ai_name: "阿栖"
   user_name: "澪"
   user_display_name: "澪"
   user_aliases:
     - "澪"
     - "老婆"
-    - "宝宝"
-    - "亲爱的"
+    - "宝贝"
+    - "澪宝"
 
 dehydration:
   model: "deepseek-ai/DeepSeek-V4-Pro"
