@@ -1,7 +1,7 @@
-DEFAULT_AI_NAME = "泊舟"
+DEFAULT_AI_NAME = "阿栖"
 DEFAULT_USER_NAME = "澪"
 DEFAULT_USER_DISPLAY_NAME = "澪"
-DEFAULT_USER_ALIASES = ["澪", "老婆", "亲爱的", "宝贝"]
+DEFAULT_USER_ALIASES = ["澪", "老婆", "澪宝", "宝贝"]
 
 GENERIC_AI_NAME = "AI"
 GENERIC_USER_NAME = "User"
